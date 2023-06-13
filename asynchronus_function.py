@@ -3,44 +3,41 @@ import asyncio
 import json
 import pandas as pd
 
-async def det(url, sequence):
-    Brand_model = torch.hub.load('yolov5', 'custom', path='weights/StartNew/Model98_v2.pt', source='local', device=0)
+async def detect_objects(model, url):
+    result = await asyncio.get_event_loop().run_in_executor(None, model, url)
+    result = result.pandas().xyxy[0].sort_values(by=['xmin', 'ymax'])
+    df = pd.DataFrame(result)
+    name_counts = df.groupby('name').size().to_dict()
+    result_dict = {}
+    for index, row in df.iterrows():
+        name = row['name']
+        result_dict[name] = name_counts.get(name, 0)
+        json.dumps(result_dict)
+        # json.loads(result_dict)
+    return result_dict
+
+async def detect_sequence(url, sequence):
+    Brand_model = torch.hub.load('yolov5', 'custom', path='yolov5/w/a.pt', source='local', device=0)
     Brand_model.conf = 0.4
     Brand_model.iou = 0.5
 
-    Count_model = torch.hub.load('yolov5', 'custom', path='weights/Brand.pt', source='local', device=0)
+    Count_model = torch.hub.load('yolov5', 'custom', path='yolov5/w/b.pt', source='local', device=0)
     Count_model.conf = 0.2
     Count_model.iou = 0.6
 
-    Brand_result = await asyncio.get_event_loop().run_in_executor(None, Brand_model, url)
-    Brand_result = Brand_result.pandas().xyxy[0].sort_values(by=['xmin', 'ymax'])
-    Brand_df = pd.DataFrame(Brand_result)
-    Brand_sorted_df = pd.DataFrame(Brand_df)
-    name_counts = Brand_sorted_df.groupby('name').size().to_dict()
-    Brand_result_dict = {}
-    for index, row in Brand_sorted_df.iterrows():
-        name = row['name']
-        Brand_result_dict.update({name: name_counts.get(name, 0)})
-    Brand_result_json = json.dumps(Brand_result_dict)
-    dict1 = json.loads(Brand_result_json)
+    tasks = [
+        detect_objects(Brand_model, url),
+        detect_objects(Count_model, url)
+    ]
+    results = await asyncio.gather(*tasks)
 
-    Count_result = await asyncio.get_event_loop().run_in_executor(None, Count_model, url)
-    Count_result = Count_result.pandas().xyxy[0].sort_values(by=['xmin', 'ymax'])
-    Count_df = pd.DataFrame(Count_result)
-    Count_sorted_df = pd.DataFrame(Count_df)
-    name_counts = Count_sorted_df.groupby('name').size().to_dict()
-    Count_result_dict = {}
-    for index, row in Count_sorted_df.iterrows():
-        name = row['name']
-        Count_result_dict.update({name: name_counts.get(name, 0)})
-    Count_result_json = json.dumps(Count_result_dict)
-    dict2 = json.loads(Count_result_json)
+    dict1, dict2 = results
 
-    item = ['v', 'w']
+    item = ['v','w']
     for i in item:
-        for key, value in dict2.items():
-            if i == key:
-                add = {key: value}
+        for key,value in dict2.items():
+            if i==key:
+                add = {key:value}
                 dict1.update(add)
             else:
                 continue
@@ -52,12 +49,14 @@ async def det(url, sequence):
             extra_item.append(i)
     for i in extra_item:
         ds.remove(i)
-    print('Detected Sequence:', ds)
+    print('Detected Sequence: ', ds)
     if ds == sequence:
-        sku = "Valid Sequence"
+        sku = ("Valid Sequence")
     else:
-        sku = "Wrong Sequence"
-    print("Given Sequence:", sequence)
+        sku = ("Wrong Sequence")
+    print("Given Sequence: ", sequence)
+
+
 
     extra = []
     for key in dict1.keys():
@@ -67,8 +66,16 @@ async def det(url, sequence):
         del dict1[items]
 
     result = {'Result': dict1, 'Sequence': sku}
-    Final_Result = json.dumps(result)
-    print("Result Sent to User:", Final_Result)
-    print("###################################################################################################")
+    final_result = json.dumps(result)
+    # print("Result Sent to User:", final_result)
+    # print("###################################################################################################")
 
-    return Final_Result
+    return final_result
+
+async def mainDetect(url,sequence):
+    result = await detect_sequence(url, sequence)
+    # print("Result Sent to User:", result)
+    # print("###################################################################################################")
+
+    return result
+
