@@ -3,9 +3,19 @@ import asyncio
 import json
 import pandas as pd
 
+
+Brand_model = torch.hub.load('yolov5', 'custom', path='AI_Model/Model_Jun13.pt', source='local', device=0)
+Brand_model.conf = 0.4
+Brand_model.iou = 0.5
+
+Count_model = torch.hub.load('yolov5', 'custom', path='AI_Model/Model_Jun13.pt', source='local', device=0)
+Count_model.conf = 0.2
+Count_model.iou = 0.6
+
+
 async def detect_objects(model, url):
     result = await asyncio.get_event_loop().run_in_executor(None, model, url)
-    result = result.pandas().xyxy[0].sort_values(by=['xmin', 'ymax'])
+    result = result.pandas().xyxy[0].sort_values(by=['ymax', 'xmin'])
     df = pd.DataFrame(result)
     name_counts = df.groupby('name').size().to_dict()
     result_dict = {}
@@ -17,13 +27,7 @@ async def detect_objects(model, url):
     return result_dict
 
 async def detect_sequence(url, sequence):
-    Brand_model = torch.hub.load('yolov5', 'custom', path='yolov5/w/a.pt', source='local', device=0)
-    Brand_model.conf = 0.4
-    Brand_model.iou = 0.5
 
-    Count_model = torch.hub.load('yolov5', 'custom', path='yolov5/w/b.pt', source='local', device=0)
-    Count_model.conf = 0.2
-    Count_model.iou = 0.6
 
     tasks = [
         detect_objects(Brand_model, url),
