@@ -2,8 +2,11 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import asyncio
 from typing import List, Union
-from asynchronus_function import *
 import uvicorn
+from asynchronous_function import *
+
+
+
 
 app = FastAPI()
 
@@ -11,15 +14,14 @@ class Item(BaseModel):
     url: str
     sequence: list
 
+
+
+
+
 async def process_item(item: Item):
-    try:
-        result = await mainDetect(item.url, item.sequence)
-        # print(item.url)
-        result = json.loads(result)
-        return result
-    finally:
-        torch.cuda.empty_cache()
-        pass
+    result = await mainDetect(item.url, item.sequence)
+    result = json.loads(result)
+    return result
 
 async def process_items(items: Union[Item, List[Item]]):
     if isinstance(items, list):
@@ -28,28 +30,29 @@ async def process_items(items: Union[Item, List[Item]]):
         results = {}
         for item in results_dict:
             results.update(item)
+
+
     else:
         results = await process_item(items)
     return results
 
+
+@app.get("/status")
+async def status():
+    return "Unilever Ok"
+ 
 @app.post("/AI_Detection")
 async def create_items(items: Union[Item, List[Item]]):
-    try:
-        results = await process_items(items)
-        print("Result Sent to User:", results)
-        print("###################################################################################################")
-        print(items)
-        return results
-    finally:
-        torch.cuda.empty_cache()
-        pass
+    results = await process_items(items)
+    print("Result Sent to User:", results)
+    print("###################################################################################################")
+    print("Last Execution Time : ", time())
+    return results
+
 
 if __name__ == "__main__":
-    try:
-        del Brand_model
-        del Count_model
-        uvicorn.run(app, host="127.0.0.1", port=8000)
-    finally:
-        torch.cuda.empty_cache()
+    uvicorn.run(app, host="127.0.0.1", port=8020)
 
 
+
+# ngrok http --domain=hawkeyes.ngrok.app 8020
