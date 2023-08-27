@@ -2,16 +2,16 @@ import torch
 import asyncio
 import json
 import pandas as pd
-
-
-Brand_model = torch.hub.load('yolov5', 'custom', path='AI_Model/Model_Jun13.pt', source='local', device=0)
+from datetime import datetime
+Brand_model = torch.hub.load('yolov5', 'custom', path='weights/StartNew/update/Model_Jun13.pt', source='local')#, device=0)
+# Brand_model = torch.hub.load('yolov5', 'custom', path='yolov5/runs/train/exp4/weights/best.pt', source='local', device=0)
 Brand_model.conf = 0.4
 Brand_model.iou = 0.5
 
-Count_model = torch.hub.load('yolov5', 'custom', path='AI_Model/Model_Jun13.pt', source='local', device=0)
+Count_model = torch.hub.load('yolov5', 'custom', path='weights/StartNew/update/Model_Jun13.pt', source='local')#, device=0)
+# Count_model = torch.hub.load('yolov5', 'custom', path='yolov5/runs/train/exp4/weights/best.pt', source='local', device=0)
 Count_model.conf = 0.2
-Count_model.iou = 0.6
-
+Count_model.iou = 0.7
 
 async def detect_objects(model, url):
     result = await asyncio.get_event_loop().run_in_executor(None, model, url)
@@ -27,7 +27,14 @@ async def detect_objects(model, url):
     return result_dict
 
 async def detect_sequence(url, sequence):
+    # Brand_model = torch.hub.load('yolov5', 'custom', path='weights/Brand_Model/BrandModel96.pt', source='local', device=0)
+    # Brand_model = torch.hub.load('yolov5', 'custom', path='weights/StartNew/update/Model_Jun13.pt', source='local', device=0)
+    # Brand_model.conf = 0.4
+    # Brand_model.iou = 0.5
 
+    # Count_model = torch.hub.load('yolov5', 'custom', path='weights/StartNew/update/Model_Jun13.pt', source='local', device=0)
+    # Count_model.conf = 0.2
+    # Count_model.iou = 0.7
 
     tasks = [
         detect_objects(Brand_model, url),
@@ -83,3 +90,7 @@ async def mainDetect(url,sequence):
 
     return result
 
+def time():
+    time_now = datetime.now()
+    current_time = time_now.strftime("%I:%M:%S %p")
+    return current_time
